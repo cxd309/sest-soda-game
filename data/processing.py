@@ -49,11 +49,13 @@ def process_file(file_list, value_vars, value_name, role_names):
     df = pd.read_csv(os.path.join(rootDir, file))
     
     # Melt the DataFrame to long-form
-    long_df = pd.melt(df, 
-                      id_vars=["category"], 
-                      value_vars=value_vars, 
-                      var_name="role", 
-                      value_name=value_name)
+    long_df = pd.melt(
+      df, 
+      id_vars=["category"], 
+      value_vars=value_vars, 
+      var_name="role", 
+      value_name=value_name
+    )
 
     # Extract game number from the filename (assuming file format is "Game X - *.csv")
     game_num = int(file.split(" ")[1].replace(f" - {role_names[0]}.csv", ""))
@@ -73,28 +75,36 @@ def process_file(file_list, value_vars, value_name, role_names):
 
 
 # Process the Orders data
-combined_orders_df = process_file(game_files["orders"], 
-                                  value_vars=["Factory", "Retailer", "Wholesaler", "Distributor", "Consumer"], 
-                                  value_name="orders", 
-                                  role_names=["Factory", "Retailer", "Wholesaler", "Distributor", "Consumer"])
+combined_orders_df = process_file(
+  game_files["orders"], 
+  value_vars=["Factory", "Retailer", "Wholesaler", "Distributor", "Consumer"], 
+  value_name="orders", 
+  role_names=["Factory", "Retailer", "Wholesaler", "Distributor", "Consumer"]
+)
 
 # Process the Inventory data
-combined_inventory_df = process_file(game_files["inventory"], 
-                                      value_vars=["Factory", "Retailer", "Wholesaler", "Distributor"], 
-                                      value_name="inventory", 
-                                      role_names=["Factory", "Retailer", "Wholesaler", "Distributor"])
+combined_inventory_df = process_file(
+  game_files["inventory"], 
+  value_vars=["Factory", "Retailer", "Wholesaler", "Distributor"], 
+  value_name="inventory", 
+  role_names=["Factory", "Retailer", "Wholesaler", "Distributor"]
+)
 
 # Process the Surplus data
-combined_surplus_df = process_file(game_files["surplus"], 
-                                   value_vars=["Factory", "Retailer", "Wholesaler", "Distributor"], 
-                                   value_name="surplus", 
-                                   role_names=["Factory", "Retailer", "Wholesaler", "Distributor"])
+combined_surplus_df = process_file(
+  game_files["surplus"], 
+  value_vars=["Factory", "Retailer", "Wholesaler", "Distributor"], 
+  value_name="surplus", 
+  role_names=["Factory", "Retailer", "Wholesaler", "Distributor"]
+)
 
 # Process the Supply Chain Cost data
-combined_supply_chain_cost_df = process_file(game_files["supply_chain_cost"], 
-                                            value_vars=["Supply Chain Cost"], 
-                                            value_name="supply_chain_cost", 
-                                            role_names=["Supply Chain Cost"])
+combined_supply_chain_cost_df = process_file(
+  game_files["supply_chain_cost"], 
+  value_vars=["Supply Chain Cost"], 
+  value_name="supply_chain_cost", 
+  role_names=["Supply Chain Cost"]
+)
 
 # Connect to SQLite Database (or create it if it doesn't exist)
 db_file = year+"/game_data.db"
@@ -113,10 +123,10 @@ conn.close()
 # Export to Excel with a sheet per DataFrame
 excel_file = year+"/game_data.xlsx"
 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-    combined_orders_df.to_excel(writer, sheet_name='orders', index=False)
-    combined_inventory_df.to_excel(writer, sheet_name='inventory', index=False)
-    combined_surplus_df.to_excel(writer, sheet_name='surplus', index=False)
-    combined_supply_chain_cost_df.to_excel(writer, sheet_name='supply_chain_cost', index=False)
+  combined_orders_df.to_excel(writer, sheet_name='orders', index=False)
+  combined_inventory_df.to_excel(writer, sheet_name='inventory', index=False)
+  combined_surplus_df.to_excel(writer, sheet_name='surplus', index=False)
+  combined_supply_chain_cost_df.to_excel(writer, sheet_name='supply_chain_cost', index=False)
 
 # export all DataFrames to a single JSON file (as a dictionary of DataFrames)
 all_data = {
@@ -128,5 +138,5 @@ all_data = {
 
 # Save the combined JSON data as a single file
 with open(year+"/game_data.json", "w") as json_file:
-    json.dump(all_data, json_file, indent=4)
+  json.dump(all_data, json_file, indent=4)
 
