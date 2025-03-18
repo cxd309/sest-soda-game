@@ -63,9 +63,10 @@ def process_file(file_list, value_vars, value_name, role_names):
     # Add game_num and week_num columns
     long_df["game_num"] = game_num
     long_df["week_num"] = long_df["category"]
-    
+    long_df["year"] = year  # Add the year column
+
     # Reorder columns to match desired structure
-    long_df = long_df[["game_num", "role", "week_num", value_name]]
+    long_df = long_df[["game_num", "role", "week_num", value_name, "year"]]
     
     # Append to the list
     all_df_list.append(long_df)
@@ -107,7 +108,7 @@ combined_supply_chain_cost_df = process_file(
 )
 
 # Connect to SQLite Database (or create it if it doesn't exist)
-db_file = year+"/game_data.db"
+db_file = year+"/game-data.db"
 conn = sqlite3.connect(db_file)
 
 # Write DataFrames to SQLite tables
@@ -121,7 +122,7 @@ conn.commit()
 conn.close()
 
 # Export to Excel with a sheet per DataFrame
-excel_file = year+"/game_data.xlsx"
+excel_file = year+"/game-data.xlsx"
 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
   combined_orders_df.to_excel(writer, sheet_name='orders', index=False)
   combined_inventory_df.to_excel(writer, sheet_name='inventory', index=False)
@@ -137,6 +138,6 @@ all_data = {
 }
 
 # Save the combined JSON data as a single file
-with open(year+"/game_data.json", "w") as json_file:
+with open(year+"/game-data.json", "w") as json_file:
   json.dump(all_data, json_file, indent=4)
 

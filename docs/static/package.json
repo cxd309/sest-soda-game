@@ -10,6 +10,9 @@
   "license": "ISC",
   "description": "JS for presentation of soda game results as part of SEST Module",
   "devDependencies": {
-    "typescript": "^5.8.2"
+    "@types/chart.js": "^2.9.41",
+    "@types/jquery": "^3.5.32",
+    "typescript": "^5.8.2",
+    "vega": "^5.33.0"
   }
 }
