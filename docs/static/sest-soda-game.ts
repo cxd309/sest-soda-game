@@ -36,12 +36,13 @@ interface GameData{
 }
 
 let game_data: GameData; // Variable to store the game data
+let roleChart: any = null;
+let sccChart: any = null;
 
-let myChart: any = null;
-
+// populate the dropdown values
 function populateDropdowns(): void {
-  const yearSelect = $("#year-select");
-  const gameSelect = $("#game-select");
+  const yearSelectors = [$("#year-select")];
+  const gameSelectors = [$("#game-select")];
 
   const years = [...new Set(
     Object.values(game_data)
@@ -57,37 +58,45 @@ function populateDropdowns(): void {
       )
   )].sort((a, b) => a - b);
 
-  yearSelect.empty();
+  yearSelectors.forEach((selector) => selector.empty());
+  gameSelectors.forEach((selector) => selector.empty());
+
   years.forEach(year => {
-    yearSelect.append(`<option value="${year}">${year}</option>`);
+    let contents = `<option value="${year}">${year}</option>`
+    yearSelectors.forEach((selector) => selector.append(contents));
   });
 
-  gameSelect.empty();
   gameNumbers.forEach(gameNum => {
-    gameSelect.append(`<option value="${gameNum}">Game ${gameNum}</option>`);
+    let contents = `<option value="${gameNum}">Game ${gameNum}</option>`
+    gameSelectors.forEach((selector) => selector.append(contents))
   });
 
   // Set default selections (first available options)
-  yearSelect.val(years[0]);
-  gameSelect.val(gameNumbers[0]);
+  yearSelectors.forEach((selector) => selector.val(years[0]));
+  gameSelectors.forEach((selector) => selector.val(gameNumbers[0]));
 
   // Trigger chart update with default selections
-  updateChart();
+  updateCharts();
 }
 
-// Function to load game data using jQuery
+// load game_data
 function loadGameData(): void {
   $.getJSON('./static/game-data.json')
     .done((data: GameData) => {
       game_data = data;
-      populateDropdowns(); // Populate dropdowns and plot default chart
+      populateDropdowns();
     })
     .fail((jqxhr, textStatus, error) => {
       console.error('Failed to load game data:', error);
     });
 }
 
-function updateChart(): void {
+function updateCharts(): void {
+  updateRoleChart();
+  updateSCCChart();
+}
+
+function updateRoleChart(): void{
   const selectedYear = $("#year-select").val() as string;
   const selectedGame = $("#game-select").val() as string;
   const selectedType = $("#chart-type").val() as string;
@@ -95,86 +104,103 @@ function updateChart(): void {
   let datasets: { label: string; data: number[]; borderColor: string }[] = [];
   let labels: number[] = [];
 
-  if (selectedType === "supply_chain_cost") {
-    // Disable game selection
-    $("#game-select").prop("disabled", true);
+  // Get the correct dataset type
+  const dataKey = selectedType as keyof GameData;
+  const selectedData = game_data[dataKey].filter(
+    (entry) => entry.year === selectedYear && entry.game_num === Number(selectedGame)
+  );
 
-    // Plot ALL games at once
-    const allGames = [...new Set(game_data.supply_chain_cost.map(entry => entry.game_num))];
+  // Separate data by role
+  const roles = [...new Set(selectedData.map(entry => entry.role))];
 
-    allGames.forEach((gameNum, index) => {
-      const gameEntries = game_data.supply_chain_cost
-        .filter(entry => entry.year === selectedYear && entry.game_num === gameNum)
-        .sort((a, b) => a.week_num - b.week_num);
+  roles.forEach((role, index) => {
+    const roleEntries = selectedData
+      .filter(entry => entry.role === role)
+      .sort((a, b) => a.week_num - b.week_num);
 
-      if (gameEntries.length > 0) {
-        if (labels.length === 0) {
-          labels = gameEntries.map(entry => entry.week_num);
-        }
-
-        datasets.push({
-          label: `Game ${gameNum}`,
-          data: gameEntries.map(entry => entry.supply_chain_cost),
-          borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-        });
+    if (roleEntries.length > 0) {
+      if (labels.length === 0) {
+        labels = roleEntries.map(entry => entry.week_num);
       }
-    });
 
-  } else {
-    // Enable game selection
-    $("#game-select").prop("disabled", false);
+      datasets.push({
+        label: `${role}`,
+        data: roleEntries.map(entry => (entry as any)[selectedType]),
+        borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+      });
+    }
+  });
 
-    // Get the correct dataset type
-    const dataKey = selectedType as keyof GameData;
-    const selectedData = game_data[dataKey].filter(
-      (entry) => entry.year === selectedYear && entry.game_num === Number(selectedGame)
-    );
+  const ctx = $("#role-chart") as unknown as HTMLCanvasElement;
 
-    // Separate data by role
-    const roles = [...new Set(selectedData.map(entry => entry.role))];
-
-    roles.forEach((role, index) => {
-      const roleEntries = selectedData
-        .filter(entry => entry.role === role)
-        .sort((a, b) => a.week_num - b.week_num);
-
-      if (roleEntries.length > 0) {
-        if (labels.length === 0) {
-          labels = roleEntries.map(entry => entry.week_num);
-        }
-
-        datasets.push({
-          label: `${role} ${selectedType}`,
-          data: roleEntries.map(entry => (entry as any)[selectedType]), // 🔥 FIXED HERE
-          borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-        });
-      }
-    });
+  if (roleChart){
+    roleChart.destroy();
   }
 
-  createChart(labels, datasets);
+  roleChart = createChart(labels, datasets, ctx, selectedType.charAt(0).toUpperCase()+selectedType.substring(1));
 }
 
+function updateSCCChart(): void{
+  const selectedYear = $("#year-select").val() as string;
 
+  let datasets: { label: string; data: number[]; borderColor: string }[] = [];
+  let labels: number[] = [];
 
-function createChart(labels: number[], datasets: { label: string; data: number[]; borderColor: string }[]): void {
-  const ctx = $("#myChart") as unknown as HTMLCanvasElement;
+  const allGames = [...new Set(game_data.supply_chain_cost.map(entry => entry.game_num))];
 
-  if (myChart) {
-    myChart.destroy(); // Destroy the old chart
+  allGames.forEach((gameNum, index) => {
+    const gameEntries = game_data.supply_chain_cost
+      .filter(entry => entry.year === selectedYear && entry.game_num === gameNum)
+      .sort((a, b) => a.week_num - b.week_num);
+
+    if (gameEntries.length > 0) {
+      if (labels.length === 0) {
+        labels = gameEntries.map(entry => entry.week_num);
+      }
+
+      datasets.push({
+        label: `Game ${gameNum}`,
+        data: gameEntries.map(entry => entry.supply_chain_cost),
+        borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
+      });
+    }
+  });
+
+  const ctx = $("#scc-chart") as unknown as HTMLCanvasElement;
+
+  if (sccChart){
+    sccChart.destroy();
   }
 
-  myChart = new Chart(ctx, {
+  sccChart = createChart(labels, datasets, ctx, "Supply Chain Cost");
+}
+
+function createChart(labels: number[], datasets: { label: string; data: number[]; borderColor: string }[], ctx: any, title: string) {
+  const chartObj = new Chart(ctx, {
     type: "line",
     data: { labels, datasets },
     options: {
       responsive: true,
+      plugins: {
+        legend: {
+          position: "right",
+        },
+        title: {
+          display: true,
+          text: title,
+          font: {
+            size: 18
+          }
+        }
+      },
       scales: {
         x: { title: { display: true, text: "Week Number" } },
-        y: { title: { display: true, text: "Value" } }
+        y: { title: { display: true, text: title } }
       }
     }
   });
+
+  return chartObj;
 }
 
 
@@ -182,9 +208,9 @@ function createChart(labels: number[], datasets: { label: string; data: number[]
 $(function () {
   loadGameData();
 
-  $("#year-select, #game-select, #chart-type").on("change", function () {
-    const scrollPos = window.scrollY; // Store current scroll position
-    updateChart(); // Refresh the chart when the type changes
+  $("#year-select, #game-select, #chart-type").on("change", function(){
+    const scrollPos = window.scrollY;
+    updateCharts();
     window.scrollTo(0, scrollPos); // Restore scroll position after update
   });
 });
