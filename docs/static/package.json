@@ -1,0 +1,15 @@
+{
+  "name": "sest-soda-game",
+  "version": "1.0.0",
+  "main": "sest-soda-game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Chris Davis",
+  "license": "ISC",
+  "description": "JS for presentation of soda game results as part of SEST Module",
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
