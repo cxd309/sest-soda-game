@@ -1,7 +1,14 @@
 "use strict";
 let game_data; // Variable to store the game data
-let roleChart = null;
-let sccChart = null;
+let roleChart;
+let sccChart;
+const roleOrder = [
+    "Consumer",
+    "Retailer",
+    "Wholesaler",
+    "Distributor",
+    "Factory"
+];
 // populate the dropdown values
 function populateDropdowns() {
     const yearSelectors = [$("#year-select")];
@@ -31,6 +38,9 @@ function loadGameData() {
     $.getJSON('./static/game-data.json')
         .done((data) => {
         game_data = data;
+        game_data.inventory.forEach(item => { item.value = item.inventory; });
+        game_data.orders.forEach(item => { item.value = item.orders; });
+        game_data.surplus.forEach(item => { item.value = item.surplus; });
         populateDropdowns();
     })
         .fail((jqxhr, textStatus, error) => {
@@ -38,92 +48,106 @@ function loadGameData() {
     });
 }
 function updateCharts() {
-    updateRoleChart();
-    updateSCCChart();
+    const dataSelection = {
+        year: $("#year-select").val(),
+        game: parseInt($("#game-select").val()),
+        type: $("#chart-type").val()
+    };
+    buildRoleChart(dataSelection);
+    buildSCCChart(dataSelection);
 }
-function updateRoleChart() {
-    const selectedYear = $("#year-select").val();
-    const selectedGame = $("#game-select").val();
-    const selectedType = $("#chart-type").val();
-    let datasets = [];
-    let labels = [];
-    // Get the correct dataset type
-    const dataKey = selectedType;
-    const selectedData = game_data[dataKey].filter((entry) => entry.year === selectedYear && entry.game_num === Number(selectedGame));
-    // Separate data by role
-    const roles = [...new Set(selectedData.map(entry => entry.role))];
-    roles.forEach((role, index) => {
-        const roleEntries = selectedData
-            .filter(entry => entry.role === role)
-            .sort((a, b) => a.week_num - b.week_num);
-        if (roleEntries.length > 0) {
-            if (labels.length === 0) {
-                labels = roleEntries.map(entry => entry.week_num);
-            }
-            datasets.push({
-                label: `${role}`,
-                data: roleEntries.map(entry => entry[selectedType]),
-                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-            });
+function buildRoleChart(dataSelection) {
+    const filteredData = game_data[dataSelection.type].filter(row => row.year == dataSelection.year &&
+        row.game_num == dataSelection.game).sort((a, b) => a.week_num - b.week_num);
+    const labels = [...new Set(filteredData.map(row => row.week_num))];
+    const chartDataset = [];
+    roleOrder.forEach(function (role) {
+        let roleData = filteredData.filter(row => row.role == role);
+        if (roleData.length > 0) {
+            chartDataset.push({ label: role, data: roleData.map(row => row.value) });
         }
     });
-    const ctx = $("#role-chart");
-    if (roleChart) {
-        roleChart.destroy();
-    }
-    roleChart = createChart(labels, datasets, ctx, selectedType.charAt(0).toUpperCase() + selectedType.substring(1));
-}
-function updateSCCChart() {
-    const selectedYear = $("#year-select").val();
-    let datasets = [];
-    let labels = [];
-    const allGames = [...new Set(game_data.supply_chain_cost.map(entry => entry.game_num))];
-    allGames.forEach((gameNum, index) => {
-        const gameEntries = game_data.supply_chain_cost
-            .filter(entry => entry.year === selectedYear && entry.game_num === gameNum)
-            .sort((a, b) => a.week_num - b.week_num);
-        if (gameEntries.length > 0) {
-            if (labels.length === 0) {
-                labels = gameEntries.map(entry => entry.week_num);
-            }
-            datasets.push({
-                label: `Game ${gameNum}`,
-                data: gameEntries.map(entry => entry.supply_chain_cost),
-                borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-            });
-        }
-    });
-    const ctx = $("#scc-chart");
-    if (sccChart) {
-        sccChart.destroy();
-    }
-    sccChart = createChart(labels, datasets, ctx, "Supply Chain Cost");
-}
-function createChart(labels, datasets, ctx, title) {
-    const chartObj = new Chart(ctx, {
-        type: "line",
-        data: { labels, datasets },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: "right",
-                },
-                title: {
-                    display: true,
-                    text: title,
-                    font: {
-                        size: 18
-                    }
-                }
+    const title = dataSelection.type.charAt(0).toUpperCase() + dataSelection.type.slice(1);
+    if (roleChart == undefined) {
+        roleChart = new Chart("role-chart", {
+            type: "line",
+            data: {
+                datasets: [{
+                        data: []
+                    }]
             },
-            scales: {
-                x: { title: { display: true, text: "Week Number" } },
-                y: { title: { display: true, text: title } }
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "right",
+                    },
+                    title: {
+                        display: true,
+                        text: `${title}`,
+                        font: {
+                            size: 18
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: "Week Number" } },
+                    y: { title: { display: true, text: `${title}` } }
+                }
             }
+        });
+    }
+    roleChart.data = { labels: labels, datasets: chartDataset };
+    roleChart.update();
+}
+function buildSCCChart(dataSelection) {
+    const filteredData = game_data.supply_chain_cost.filter(row => row.year == dataSelection.year).sort((a, b) => a.week_num - b.week_num).sort((a, b) => a.game_num - b.game_num);
+    const labels = [...new Set(filteredData.map(row => row.week_num))];
+    const gameNumbers = [...new Set(filteredData.map(row => row.game_num))];
+    const chartDataset = [];
+    gameNumbers.forEach(function (game_num) {
+        let gameData = filteredData.filter(row => row.game_num == game_num);
+        if (gameData.length > 0) {
+            chartDataset.push({
+                label: `Game ${game_num}`,
+                data: gameData.map(row => row.supply_chain_cost),
+                borderColor: `hsla(${(game_num * 22.5) % 360}, 70%, 50%)`,
+                backgroundColor: `hsla(${(game_num * 22.5) % 360}, 70%, 50%, 0.5)`
+            });
         }
     });
-    return chartObj;
+    console.log(chartDataset);
+    if (sccChart == undefined) {
+        sccChart = new Chart("scc-chart", {
+            type: "line",
+            data: {
+                datasets: [{
+                        data: []
+                    }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "right",
+                    },
+                    title: {
+                        display: true,
+                        text: "Supply Chain Cost",
+                        font: {
+                            size: 18
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: "Week Number" } },
+                    y: { title: { display: true, text: "Supply Chain Cost" } }
+                }
+            }
+        });
+    }
+    sccChart.data = { labels: labels, datasets: chartDataset };
+    sccChart.update();
 }
 // Call the function after the page loads
 $(function () {
