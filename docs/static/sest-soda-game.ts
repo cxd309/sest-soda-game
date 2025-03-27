@@ -137,7 +137,29 @@ function buildRoleChart(dataSelection: DataSelector): void {
       chartDataset.push({label:role, data:roleData.map(row => row.value)});
     }
   });
+  
   const title: string = dataSelection.type.charAt(0).toUpperCase() + dataSelection.type.slice(1)
+
+  const chartOptions: Chart.ChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "right",
+      },
+      title: {
+        display: true,
+        text: `${title}`,
+        font: {
+          size: 18
+        }
+      }
+    },
+    scales: ({
+      x: { title: { display: true, text: "Week Number" } },
+      y: { title: { display: true, text: `${title}` } }
+    } as Chart.LinearScale)
+  };
+
   if(roleChart == undefined){
     roleChart = new Chart(
       "role-chart",
@@ -148,29 +170,12 @@ function buildRoleChart(dataSelection: DataSelector): void {
             data:[]
           }]
         },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: "right",
-            },
-            title: {
-              display: true,
-              text: `${title}`,
-              font: {
-                size: 18
-              }
-            }
-          },
-          scales: ({
-            x: { title: { display: true, text: "Week Number" } },
-            y: { title: { display: true, text: `${title}` } }
-          } as Chart.LinearScale)
-        }
+        options: chartOptions
       }
     );
   }
   roleChart.data = {labels: labels, datasets: chartDataset};
+  roleChart.options = chartOptions;
   roleChart.update();
 }
 

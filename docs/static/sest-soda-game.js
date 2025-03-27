@@ -68,6 +68,25 @@ function buildRoleChart(dataSelection) {
         }
     });
     const title = dataSelection.type.charAt(0).toUpperCase() + dataSelection.type.slice(1);
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: "right",
+            },
+            title: {
+                display: true,
+                text: `${title}`,
+                font: {
+                    size: 18
+                }
+            }
+        },
+        scales: {
+            x: { title: { display: true, text: "Week Number" } },
+            y: { title: { display: true, text: `${title}` } }
+        }
+    };
     if (roleChart == undefined) {
         roleChart = new Chart("role-chart", {
             type: "line",
@@ -76,28 +95,11 @@ function buildRoleChart(dataSelection) {
                         data: []
                     }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: "right",
-                    },
-                    title: {
-                        display: true,
-                        text: `${title}`,
-                        font: {
-                            size: 18
-                        }
-                    }
-                },
-                scales: {
-                    x: { title: { display: true, text: "Week Number" } },
-                    y: { title: { display: true, text: `${title}` } }
-                }
-            }
+            options: chartOptions
         });
     }
     roleChart.data = { labels: labels, datasets: chartDataset };
+    roleChart.options = chartOptions;
     roleChart.update();
 }
 function buildSCCChart(dataSelection) {
