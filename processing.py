@@ -1,47 +1,51 @@
-import os, sqlite3, json
+import os, sqlite3, json, re
 import pandas as pd
 
-year = "2025"
+ROOT_DIR = "~/git/sest-soda-game/docs/static/raw-data"
+OUT_DIR = "~/git/sest-soda-game/docs/static"
+
+# list all files in ROOT_DIR that match the expected syntax, 
+# these will be of the format:
+# {year} - Game {game_num} - {table_name}.csv
+# year: alphanumeric
+# game_num: numeric
+# table_name: one of orders, inventory, surplus, supply_chain_cost
+file_pattern = r'^\w+ - Game \d+ - (orders|inventory|surplus|supply_chain_cost)\.csv$'
+
+# List all files in ROOT_DIR that match the pattern
+raw_files = [f for f in os.listdir(ROOT_DIR) if re.match(file_pattern, f)]
+
+print(matching_files)
+
 
 # Define the directory
-rootDir = os.path.dirname(os.path.realpath(__file__)) + "/"+year+"/raw/"
+rootDir = os.path.dirname(os.path.realpath(__file__)) + "/raw/"
 
 # List all files in the directory
 files = os.listdir(rootDir)
 
-# Organize files by type
-game_files = {
-  "orders": [],
-  "inventory": [],
-  "surplus": [],
-  "supply_chain_cost": []
-}
+def process_year_folder(folderPath):
+  # Organize files by type
+  game_files = {
+    "orders": [],
+    "inventory": [],
+    "surplus": [],
+    "supply_chain_cost": []
+  }
 
-# Filter files by type
-for file in files:
-  if "Orders.csv" in file:
-    game_files["orders"].append(file)
-  elif "Inventory.csv" in file:
-    game_files["inventory"].append(file)
-  elif "Surplus.csv" in file:
-    game_files["surplus"].append(file)
-  elif "Supply Chain Cost.csv" in file:
-    game_files["supply_chain_cost"].append(file)
+  # Filter files by type
+  for file in files:
+    if "Orders.csv" in file:
+      game_files["orders"].append(file)
+    elif "Inventory.csv" in file:
+      game_files["inventory"].append(file)
+    elif "Surplus.csv" in file:
+      game_files["surplus"].append(file)
+    elif "Supply Chain Cost.csv" in file:
+      game_files["supply_chain_cost"].append(file)
 
 # Function to process each file
-def process_file(file_list, value_vars, value_name, role_names):
-  """
-  General function to process CSV files into long-form data.
-
-  Args:
-  - file_list: List of file names to process.
-  - value_vars: List of columns to melt (roles).
-  - value_name: Name for the value column (e.g., "orders", "inventory").
-  - role_names: The column names for roles (e.g., ["Factory", "Retailer"]).
-
-  Returns:
-  - DataFrame containing the processed long-form data.
-  """
+def process_file(year, file_list, value_vars):
   all_df_list = []
 
   for file in file_list:
