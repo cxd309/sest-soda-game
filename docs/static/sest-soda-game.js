@@ -1,5 +1,10 @@
 "use strict";
-let game_data; // Variable to store the game data
+let game_data = {
+    inventory: [],
+    orders: [],
+    supply_chain_cost: [],
+    surplus: []
+}; // Variable to store the game data
 let roleChart;
 let sccChart;
 const roleOrder = [
@@ -34,15 +39,22 @@ function populateDropdowns() {
     updateCharts();
 }
 // load game_data
-function loadGameData() {
-    $.getJSON('./static/game-data.json')
-        .done((data) => {
-        game_data = data;
-        populateDropdowns();
-    })
-        .fail((jqxhr, textStatus, error) => {
-        console.error('Failed to load game data:', error);
-    });
+async function loadGameData() {
+    const SQL = await initSqlJs();
+    const response = await fetch('./static/game-data.db');
+    const buffer = await response.arrayBuffer();
+    const db = new SQL.Database(new Uint8Array(buffer));
+    const table_names = ["inventory", "orders", "supply_chain_cost", "surplus"];
+    for (const table_name of table_names) {
+        const query = `SELECT * FROM ${table_name}`;
+        const stmt = db.prepare(query);
+        game_data[table_name] = [];
+        while (stmt.step()) {
+            const row = stmt.getAsObject();
+            game_data[table_name].push(row);
+        }
+    }
+    populateDropdowns();
 }
 function updateCharts() {
     const dataSelection = {
@@ -115,7 +127,6 @@ function buildSCCChart(dataSelection) {
             });
         }
     });
-    console.log(chartDataset);
     if (sccChart == undefined) {
         sccChart = new Chart("scc-chart", {
             type: "line",

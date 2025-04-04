@@ -38,7 +38,12 @@ interface DataSelector{
   type: keyof GameData
 }
 
-let game_data: GameData; // Variable to store the game data
+let game_data: GameData = {
+  inventory: [],
+  orders: [],
+  supply_chain_cost: [],
+  surplus: []
+}; // Variable to store the game data
 let roleChart: Chart;
 let sccChart: Chart;
 const roleOrder: string[] = [
@@ -90,15 +95,24 @@ function populateDropdowns(): void {
 }
 
 // load game_data
-function loadGameData(): void {
-  $.getJSON('./static/game-data.json')
-    .done((data: GameData) => {
-      game_data = data;
-      populateDropdowns();
-    })
-    .fail((jqxhr, textStatus, error) => {
-      console.error('Failed to load game data:', error);
-    });
+async function loadGameData(): Promise<void> {
+  const SQL: initSqlJs.SqlJsStatic = await initSqlJs();
+  const response: Response = await fetch('./static/game-data.db');
+  const buffer: ArrayBuffer = await response.arrayBuffer();
+  const db = new SQL.Database(new Uint8Array(buffer));
+
+  const table_names: (keyof GameData)[] = ["inventory", "orders", "supply_chain_cost", "surplus"];
+
+  for(const table_name of table_names){
+    const query: string = `SELECT * FROM ${table_name}`;
+    const stmt = db.prepare(query);
+    game_data[table_name] = [];
+    while (stmt.step()) {
+      const row: initSqlJs.ParamsObject = stmt.getAsObject();
+      game_data[table_name].push(((row as unknown) as Inventory));
+    }
+  }
+  populateDropdowns();
 }
 
 function updateCharts(): void {
@@ -201,7 +215,6 @@ function buildSCCChart(dataSelection: DataSelector): void {
       });
     }
   });
-  console.log(chartDataset);
   if(sccChart == undefined){
     sccChart = new Chart(
       "scc-chart",
