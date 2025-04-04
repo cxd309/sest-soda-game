@@ -38,9 +38,6 @@ function loadGameData() {
     $.getJSON('./static/game-data.json')
         .done((data) => {
         game_data = data;
-        game_data.inventory.forEach(item => { item.value = item.inventory; });
-        game_data.orders.forEach(item => { item.value = item.orders; });
-        game_data.surplus.forEach(item => { item.value = item.surplus; });
         populateDropdowns();
     })
         .fail((jqxhr, textStatus, error) => {
@@ -112,7 +109,7 @@ function buildSCCChart(dataSelection) {
         if (gameData.length > 0) {
             chartDataset.push({
                 label: `Game ${game_num}`,
-                data: gameData.map(row => row.supply_chain_cost),
+                data: gameData.map(row => row.value),
                 borderColor: `hsla(${(game_num * 22.5) % 360}, 70%, 50%)`,
                 backgroundColor: `hsla(${(game_num * 22.5) % 360}, 70%, 50%, 0.5)`
             });

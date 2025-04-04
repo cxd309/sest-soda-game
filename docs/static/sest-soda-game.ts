@@ -1,34 +1,30 @@
 interface Inventory{
   game_num: number,
-  inventory: number,
+  value: number,
   role: string,
   week_num: number,
-  year: string,
-  value?: number
+  year: string
 }
 interface Order{
   game_num: number,
-  orders: number,
+  value: number,
   role: string,
   week_num: number,
-  year: string,
-  value?: number
+  year: string
 }
 interface SupplyChainCost{
   game_num: number,
-  supply_chain_cost: number,
-  role: string,
+  value: number,
   week_num: number,
   year: string,
-  value?: number
+  role?: string
 }
 interface Surplus{
   game_num: number,
-  surplus: number,
+  value: number,
   role: string,
   week_num: number,
   year: string,
-  value?: number
 }
 interface GameData{
   inventory: Inventory[],
@@ -98,9 +94,6 @@ function loadGameData(): void {
   $.getJSON('./static/game-data.json')
     .done((data: GameData) => {
       game_data = data;
-      game_data.inventory.forEach(item => {item.value = item.inventory});
-      game_data.orders.forEach(item => {item.value = item.orders});
-      game_data.surplus.forEach(item => {item.value = item.surplus});
       populateDropdowns();
     })
     .fail((jqxhr, textStatus, error) => {
@@ -202,7 +195,7 @@ function buildSCCChart(dataSelection: DataSelector): void {
     if(gameData.length >0){
       chartDataset.push({
         label:`Game ${game_num}`, 
-        data:gameData.map(row => row.supply_chain_cost),
+        data:gameData.map(row => row.value),
         borderColor: `hsla(${(game_num * 22.5) % 360}, 70%, 50%)`,
         backgroundColor: `hsla(${(game_num * 22.5) % 360}, 70%, 50%, 0.5)`
       });
