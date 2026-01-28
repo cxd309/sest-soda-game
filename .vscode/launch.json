@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: File Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "fs.py",
+        "FLASK_DEBUG": "1"
+      },
+      "args": ["run", "--port=8081", "--no-debugger", "--no-reload"],
+      "jinja": true,
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: Prepare Data",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/prepare_data.py",
+      "args": ["./raw-data", "./docs/static/game-data.db"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
