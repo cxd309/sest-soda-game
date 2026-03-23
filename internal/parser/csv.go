@@ -16,7 +16,7 @@ var filenamePattern = regexp.MustCompile(`^(.+) - Game (\d+)\.csv$`)
 type ParsedGame struct {
 	Group                 string
 	GameNum               int
-	TranscentisID         string
+	TransentisID          string
 	TargetSurplus         int64
 	TargetRetailerCost    int64
 	TargetSupplyChainCost int64
@@ -51,7 +51,7 @@ type csvRoleDef struct {
 	actualOrderCol string
 }
 
-// csvRoles maps Transcentis CSV column prefixes to DB role names.
+// csvRoles maps Transentis CSV column prefixes to DB role names.
 // BREWERY is the Factory role — renamed at import time.
 var csvRoles = []csvRoleDef{
 	{"BREWERY", "factory", "BREWERYactualProduction"},
@@ -60,7 +60,7 @@ var csvRoles = []csvRoleDef{
 	{"RETAILER", "retailer", "RETAILERactualOrder"},
 }
 
-// ParseFile parses a Transcentis game CSV export into a ParsedGame.
+// ParseFile parses a Transentis game CSV export into a ParsedGame.
 // The filename must match the pattern "{Group} - Game {N}.csv".
 // Week numbers are derived from row position (1-based), not the CSV id column.
 func ParseFile(path string) (*ParsedGame, error) {
@@ -122,7 +122,7 @@ func ParseFile(path string) (*ParsedGame, error) {
 	}
 
 	// Game-level fields are constant across all rows; read from the first row.
-	transcentisID := strings.TrimSpace(records[0][idx["gameId"]])
+	transentisID := strings.TrimSpace(records[0][idx["gameId"]])
 	targetSurplus, err := getInt(records[0], "policySettingstargetSurplus")
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func ParseFile(path string) (*ParsedGame, error) {
 	game := &ParsedGame{
 		Group:                 group,
 		GameNum:               gameNum,
-		TranscentisID:         transcentisID,
+		TransentisID:          transentisID,
 		TargetSurplus:         targetSurplus,
 		TargetRetailerCost:    targetRetailerCost,
 		TargetSupplyChainCost: targetSupplyChainCost,
@@ -175,7 +175,7 @@ func ParseFile(path string) (*ParsedGame, error) {
 }
 
 func parseRoleStat(record []string, cr csvRoleDef, getInt func([]string, string) (int64, error), getFloat func([]string, string) (float64, error)) (RoleStat, error) {
-	geti := func(col string) (int64, error)   { return getInt(record, col) }
+	geti := func(col string) (int64, error) { return getInt(record, col) }
 	getf := func(col string) (float64, error) { return getFloat(record, col) }
 
 	actualOrder, err := geti(cr.actualOrderCol)

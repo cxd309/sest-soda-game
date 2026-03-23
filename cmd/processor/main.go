@@ -89,7 +89,7 @@ func insertGame(ctx context.Context, conn *sql.DB, q *db.Queries, game *parser.P
 	gameID, err := qtx.InsertGame(ctx, db.InsertGameParams{
 		GroupID:               groupID,
 		GameNum:               int64(game.GameNum),
-		TranscentisID:         game.TranscentisID,
+		TranscentisID:         game.TransentisID,
 		TargetSurplus:         game.TargetSurplus,
 		TargetRetailerCost:    game.TargetRetailerCost,
 		TargetSupplyChainCost: game.TargetSupplyChainCost,
